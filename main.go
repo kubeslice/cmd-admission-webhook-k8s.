@@ -194,6 +194,12 @@ func (s *admissionWebhookServer) createVolumesPatch(p string, volumes []corev1.V
 				},
 			},
 		},
+		corev1.Volume{
+			Name: "nsm-dns-config",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
 	)
 	return jsonpatch.NewOperation("add", path.Join(p, "spec", "volumes"), volumes)
 }
@@ -273,6 +279,10 @@ func (s *admissionWebhookServer) addVolumeMounts(c *corev1.Container) {
 		Name:      "nsm-socket",
 		MountPath: "/var/lib/networkservicemesh",
 		ReadOnly:  true,
+	}, corev1.VolumeMount{
+		Name:      "nsm-dns-config",
+		MountPath: "/etc/nsm-dns-config",
+		ReadOnly:  false,
 	})
 }
 
