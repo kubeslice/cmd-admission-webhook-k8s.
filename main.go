@@ -253,6 +253,7 @@ func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []
 			ImagePullPolicy: corev1.PullIfNotPresent,
 		})
 		s.addVolumeMounts(&containers[len(containers)-1])
+		s.addDefaultResourceRequest(&containers[len(containers)-1])
 	}
 	return jsonpatch.NewOperation("add", path.Join(p, "spec", "containers"), containers)
 }
@@ -268,6 +269,14 @@ func (s *admissionWebhookServer) addResources(c *corev1.Container, r map[string]
 		}
 		c.Resources.Limits[corev1.ResourceName(key)] = resource.MustParse(strconv.Itoa(value))
 	}
+}
+
+func (s *admissionWebhookServer) addDefaultResourceRequest(c *corev1.Container) {
+	if c.Resources.Requests == nil {
+		c.Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
+	}
+	c.Resources.Requests[corev1.ResourceCPU] = resource.MustParse("5m")
+	c.Resources.Requests[corev1.ResourceMemory] = resource.MustParse("10Mi")
 }
 
 func (s *admissionWebhookServer) addVolumeMounts(c *corev1.Container) {
