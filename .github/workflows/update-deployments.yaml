@@ -16,13 +16,13 @@ jobs:
     if: ${{ github.repository != 'networkservicemesh/cmd-template' && (github.event.workflow_run.conclusion == 'success' && github.actor == 'nsmbot' || github.event_name == 'push') }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.repository }}
           repository: ${{ github.repository }}
           token: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
       - name: Find merged PR
-        uses: jwalton/gh-find-current-pr@v1.0.2
+        uses: jwalton/gh-find-current-pr@v1.3.0
         id: findPr
         with:
           sha: ${{ github.sha }}
@@ -38,23 +38,23 @@ jobs:
           echo "$LOG_MSG" >> /tmp/commit-message
           echo "Commit Message:"
           cat /tmp/commit-message
-      - uses: benjlevesque/short-sha@v1.2
+      - uses: benjlevesque/short-sha@v2.1
         id: short-sha
         with:
           length: 7
       - name: Checkout networkservicemesh/deployments-k8s
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: networkservicemesh/deployments-k8s
           repository: networkservicemesh/deployments-k8s
           token: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
       - name: Find and Replace version
-        uses: jacobtomlinson/gha-find-replace@master
+        uses: jacobtomlinson/gha-find-replace@2.0.0
         with:
           find: "${{ github.event.repository.name }}:.*\n"
           replace: "${{ github.event.repository.name }}:${{ steps.short-sha.outputs.sha }}\n"
       - name: Find and Replace ci/${{ github.event.repository.name }} version
-        uses: jacobtomlinson/gha-find-replace@master
+        uses: jacobtomlinson/gha-find-replace@2.0.0
         with:
           find: "ci/${{ github.event.repository.name }}:.*\n"
           replace: "ci/${{ github.event.repository.name }}:${{ steps.short-sha.outputs.sha }}\n"
