@@ -155,7 +155,7 @@ jobs:
           ref: release/${{ needs.check-branch.outputs.tag }}
 
       - name: Find and Replace ci/${{ github.repository }} version
-        uses: jacobtomlinson/gha-find-replace@v2
+        uses: jacobtomlinson/gha-find-replace@2.0.0
         with:
           find: "ci/${{ github.event.repository.name }}:.*\n"
           replace: "${{ github.event.repository.name }}:${{ needs.check-branch.outputs.tag }}\n"
