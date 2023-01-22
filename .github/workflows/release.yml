@@ -18,11 +18,11 @@ jobs:
       - name: Get tag
         run: |
           branch=${{github.event.workflow_run.head_branch}}
-          echo '::set-output name=tag::'${branch#release/}
+          echo "tag=${branch#release/}" >> $GITHUB_OUTPUT
         id: get-tag-step
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: refs/heads/${{github.event.workflow_run.head_branch}}
 
@@ -43,7 +43,7 @@ jobs:
       tag: ${{ needs.check-gomod-deps.outputs.tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: refs/heads/${{github.event.workflow_run.head_branch}}
 
@@ -69,22 +69,22 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_branch, 'release/') }}
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: refs/heads/${{github.event.workflow_run.head_branch}}
 
       - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: "Login to GitHub Container Registry"
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Build and push"
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           file: Dockerfile
           context: .
@@ -100,7 +100,7 @@ jobs:
       tag: ${{ needs.create-release.outputs.tag }}
     steps:
       - name: Checkout networkservicemesh/deployments-k8s
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: networkservicemesh/deployments-k8s
           repository: networkservicemesh/deployments-k8s
@@ -133,7 +133,7 @@ jobs:
     if: ${{ github.repository != 'networkservicemesh/cmd-template' }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.repository }}
           repository: ${{ github.repository }}
@@ -147,7 +147,7 @@ jobs:
           cat /tmp/commit-message
 
       - name: Checkout networkservicemesh/deployments-k8s
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: networkservicemesh/deployments-k8s
           repository: networkservicemesh/deployments-k8s
@@ -155,7 +155,7 @@ jobs:
           ref: release/${{ needs.check-branch.outputs.tag }}
 
       - name: Find and Replace ci/${{ github.repository }} version
-        uses: jacobtomlinson/gha-find-replace@master
+        uses: jacobtomlinson/gha-find-replace@v2
         with:
           find: "ci/${{ github.event.repository.name }}:.*\n"
           replace: "${{ github.event.repository.name }}:${{ needs.check-branch.outputs.tag }}\n"
