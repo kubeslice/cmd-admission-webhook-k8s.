@@ -9,7 +9,7 @@ jobs:
     name: Pull Request on update/sync Branch Push
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Construct PR message
         run: |
           PULL_REQUEST_BODY=$(git log --pretty='format:%B' -1 | sed '/^$/d;$d' | sed 's/#/# /g')
@@ -18,7 +18,7 @@ jobs:
           echo "$PULL_REQUEST_BODY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: pull-request-action
-        uses: vsoch/pull-request-action@1.0.12
+        uses: vsoch/pull-request-action@1.0.24
         env:
           GITHUB_TOKEN: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
           BRANCH_PREFIX: "update/"
