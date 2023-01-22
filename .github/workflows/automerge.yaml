@@ -15,7 +15,7 @@ jobs:
       pr_branch_ref: ${{ steps.check_mergeability.outputs.pr_branch_ref }}
     steps:
       - name: Find current PR
-        uses: jwalton/gh-find-current-pr@v1.0.2
+        uses: jwalton/gh-find-current-pr@v1.3.0
         id: findPr
         with:
           sha: ${{ github.event.workflow_run.head_sha }}
@@ -39,13 +39,13 @@ jobs:
           echo "Mergeable: ${{ fromJson(steps.get_pull_request_info.outputs.data).mergeable }}"
           PR_BRANCH_REF=${{ fromJson(steps.get_pull_request_info.outputs.data).head.ref }}
           echo "PR_BRANCH_REF: $PR_BRANCH_REF"
-          echo "::set-output name=pr_branch_ref::$PR_BRANCH_REF"
+          echo "pr_branch_ref=$PR_BRANCH_REF" >> $GITHUB_OUTPUT
           if [ "${{ fromJson(steps.get_pull_request_info.outputs.data).mergeable }}" != "true" ]; then
             echo "PR has conflicts"
             exit 1
           fi
       - name: Check out the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Fetch main
         run: |
           git remote -v
@@ -66,12 +66,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout default branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           token: ${{ secrets.NSM_BOT_GITHUB_TOKEN }}
       - name: Checkout PR branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ needs.automerge.outputs.pr_branch_ref }}
           fetch-depth: 0
