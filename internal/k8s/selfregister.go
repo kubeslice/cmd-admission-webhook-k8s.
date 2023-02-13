@@ -131,15 +131,6 @@ func (a *AdmissionWebhookRegisterClient) Register(ctx context.Context, c *config
 				NamespaceSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
-							Key:      "name",
-							Operator: metav1.LabelSelectorOpNotIn,
-							Values: []string{
-								"spire",
-								"kube-system",
-								"kubeslice-controller",
-							},
-						},
-						{
 							Key:      "kubernetes.io/metadata.name",
 							Operator: metav1.LabelSelectorOpNotIn,
 							Values: []string{
