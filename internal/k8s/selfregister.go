@@ -21,25 +21,29 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 
+	"github.com/networkservicemesh/cmd-admission-webhook/internal/config"
 	"go.uber.org/zap"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	admissionregistrationv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-
-	"github.com/networkservicemesh/cmd-admission-webhook/internal/config"
 )
 
 // AdmissionWebhookRegisterClient is a simple client that can register and unregister MutatingWebhookConfiguration based on config.Config
 type AdmissionWebhookRegisterClient struct {
-	Logger *zap.SugaredLogger
-	once   sync.Once
-	client admissionregistrationv1.AdmissionregistrationV1Interface
+	Logger       *zap.SugaredLogger
+	once         sync.Once
+	client       admissionregistrationv1.AdmissionregistrationV1Interface
+	clientCoreV1 v1.CoreV1Interface
 }
 
 func (a *AdmissionWebhookRegisterClient) initializeClient() {
@@ -52,6 +56,21 @@ func (a *AdmissionWebhookRegisterClient) initializeClient() {
 		panic(err.Error())
 	}
 	a.client = clientset.AdmissionregistrationV1()
+	a.clientCoreV1 = clientset.CoreV1()
+}
+
+func (a *AdmissionWebhookRegisterClient) GetServiceClusterIP(ctx context.Context) (string, error) {
+	dnsServiceName := os.Getenv("DNS_SERVICE_NAME")
+	service := strings.Split(dnsServiceName, ".")[0]
+	ns := strings.Split(dnsServiceName, ".")[1]
+	svc, err := a.clientCoreV1.Services(ns).Get(ctx, service, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	if svc == nil {
+		return "", errors.New("unable to fetch dns service")
+	}
+	return svc.Spec.ClusterIP, nil
 }
 
 // Register registers MutatingWebhookConfiguration based on passed config.Config
