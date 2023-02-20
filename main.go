@@ -56,7 +56,7 @@ type admissionWebhookServer struct {
 	logger *zap.SugaredLogger
 }
 
-func (s *admissionWebhookServer) Review(in *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+func (s *admissionWebhookServer) Review(in *admissionv1.AdmissionRequest, clusterIP string) *admissionv1.AdmissionResponse {
 	var resp = &admissionv1.AdmissionResponse{
 		UID: in.UID,
 	}
@@ -84,7 +84,7 @@ func (s *admissionWebhookServer) Review(in *admissionv1.AdmissionRequest) *admis
 
 	if annotation != "" {
 		bytes, err := json.Marshal([]jsonpatch.JsonPatchOperation{
-			s.createInitContainerPatch(p, annotation, spec.InitContainers),
+			s.createInitContainerPatch(p, annotation, spec.InitContainers, clusterIP),
 			s.createContainerPatch(p, annotation, spec.Containers),
 			s.createVolumesPatch(p, spec.Volumes),
 			s.createLabelPatch(p, podMetaPtr.Labels),
@@ -229,12 +229,12 @@ func parseResources(v string, logger *zap.SugaredLogger) map[string]int {
 	return poolResources
 }
 
-func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initContainers []corev1.Container) jsonpatch.JsonPatchOperation {
+func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initContainers []corev1.Container, clusterIP string) jsonpatch.JsonPatchOperation {
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
 		initContainers = append(initContainers, corev1.Container{
 			Name:            nameOf(img),
-			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}),
+			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, corev1.EnvVar{Name: "DNS_NAMESERVER_IP", Value: clusterIP}),
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 		})
@@ -358,6 +358,14 @@ func main() {
 		_ = registerClient.Unregister(context.Background(), conf)
 	}()
 
+	// fetch the kubeslice-dns.kubeslice-system service's ClusterIP
+	var clusterIPOfDNSService string
+	if os.Getenv("DNS_SERVICE_NAME") != "" {
+		clusterIPOfDNSService, err = registerClient.GetServiceClusterIP(ctx)
+		if err != nil {
+			prod.Fatal(err.Error())
+		}
+	}
 	s := echo.New()
 	s.Use(middleware.Logger())
 	s.Use(middleware.Recover())
@@ -379,7 +387,7 @@ func main() {
 			return err
 		}
 
-		review.Response = handler.Review(review.Request)
+		review.Response = handler.Review(review.Request, clusterIPOfDNSService)
 
 		response, err := json.Marshal(review)
 		if err != nil {
