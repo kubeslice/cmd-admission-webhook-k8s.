@@ -131,7 +131,7 @@ func (c *Config) initializeCert() {
 		}
 		c.cert = cert
 	}
-	c.cert = c.selfSignedInMemoryCertificeate()
+	// c.cert = c.selfSignedInMemoryCertificeate()
 }
 
 func (c *Config) selfSignedInMemoryCertificeate() tls.Certificate {
