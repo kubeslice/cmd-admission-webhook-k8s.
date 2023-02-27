@@ -76,7 +76,7 @@ func (c *Config) GetOrResolveCABundle() []byte {
 func (c *Config) initialize() {
 	c.initializeEnvs()
 	c.initializeCert()
-	c.initializeCABundle()
+	// c.initializeCABundle()
 }
 
 func (c *Config) initializeEnvs() {
