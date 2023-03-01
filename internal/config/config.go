@@ -135,7 +135,6 @@ func (c *Config) initializeCert() {
 }
 
 func (c *Config) selfSignedInMemoryCertificeate() tls.Certificate {
-	fmt.Println("we should not be inside this func")
 	now := time.Now()
 
 	template := &x509.Certificate{
