@@ -124,14 +124,14 @@ func (c *Config) initializeCABundle() {
 
 func (c *Config) initializeCert() {
 	if c.CertFilePath != "" && c.KeyFilePath != "" {
-		fmt.Println("We are able to reach here")
 		cert, err := tls.LoadX509KeyPair(c.CertFilePath, c.KeyFilePath)
 		if err != nil {
 			panic(err.Error())
 		}
 		c.cert = cert
+	} else {
+		c.cert = c.selfSignedInMemoryCertificeate()
 	}
-	// c.cert = c.selfSignedInMemoryCertificeate()
 }
 
 func (c *Config) selfSignedInMemoryCertificeate() tls.Certificate {
