@@ -44,6 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/networkservicemesh/cmd-admission-webhook/internal/config"
+	"github.com/networkservicemesh/cmd-admission-webhook/internal/k8s"
 	"github.com/networkservicemesh/sdk/pkg/tools/nsurl"
 	"github.com/networkservicemesh/sdk/pkg/tools/opentelemetry"
 )
@@ -344,18 +345,18 @@ func main() {
 		}()
 	}
 
-	// var registerClient = k8s.AdmissionWebhookRegisterClient{
-	// 	Logger: logger.Named("admissionWebhookRegisterClient"),
-	// }
+	var registerClient = k8s.AdmissionWebhookRegisterClient{
+		Logger: logger.Named("admissionWebhookRegisterClient"),
+	}
 
-	// err = registerClient.Register(ctx, conf)
-	// if err != nil {
-	// 	prod.Fatal(err.Error())
-	// }
+	err = registerClient.Register(ctx, conf)
+	if err != nil {
+		prod.Fatal(err.Error())
+	}
 
-	// defer func() {
-	// 	_ = registerClient.Unregister(context.Background(), conf)
-	// }()
+	defer func() {
+		_ = registerClient.Unregister(context.Background(), conf)
+	}()
 
 	s := echo.New()
 	s.Use(middleware.Logger())
