@@ -115,6 +115,7 @@ func (c *Config) initializeCABundle() {
 	if len(c.caBundle) != 0 {
 		return
 	}
+	fmt.Println("ca bundle filepath -- ", c.CABundleFilePath)
 	r, err := ioutil.ReadFile(c.CABundleFilePath)
 	if err != nil {
 		panic(err.Error())
