@@ -175,13 +175,14 @@ func (s *admissionWebhookServer) postProcessPodMeta(podMetaPtr, metaPtr *v1.Obje
 
 func (s *admissionWebhookServer) createVolumesPatch(p string, volumes []corev1.Volume) jsonpatch.JsonPatchOperation {
 	hostPathDir := corev1.HostPathDirectory
+	readOnly := true
 	volumes = append(volumes,
 		corev1.Volume{
 			Name: "spire-agent-socket",
 			VolumeSource: corev1.VolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: "/run/spire/sockets",
-					Type: &hostPathDir,
+				CSI: &corev1.CSIVolumeSource{
+					Driver: "csi.spiffe.io",
+					ReadOnly: &readOnly,
 				},
 			},
 		},
