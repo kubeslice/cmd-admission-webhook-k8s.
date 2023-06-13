@@ -174,7 +174,6 @@ func (s *admissionWebhookServer) postProcessPodMeta(podMetaPtr, metaPtr *v1.Obje
 }
 
 func (s *admissionWebhookServer) createVolumesPatch(p string, volumes []corev1.Volume) jsonpatch.JsonPatchOperation {
-	hostPathDir := corev1.HostPathDirectory
 	readOnly := true
 	volumes = append(volumes,
 		corev1.Volume{
@@ -183,15 +182,6 @@ func (s *admissionWebhookServer) createVolumesPatch(p string, volumes []corev1.V
 				CSI: &corev1.CSIVolumeSource{
 					Driver: "csi.spiffe.io",
 					ReadOnly: &readOnly,
-				},
-			},
-		},
-		corev1.Volume{
-			Name: "nsm-socket",
-			VolumeSource: corev1.VolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: "/var/lib/networkservicemesh",
-					Type: &hostPathDir,
 				},
 			},
 		},
@@ -231,9 +221,6 @@ func parseResources(v string, logger *zap.SugaredLogger) map[string]int {
 }
 
 func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initContainers []corev1.Container) jsonpatch.JsonPatchOperation {
-	var runAsNonRoot bool = false
-	var runAsUser int64 = 0
-	var runAsGroup int64 = 0
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
 		initContainers = append(initContainers, corev1.Container{
@@ -241,11 +228,6 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}),
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
-			SecurityContext: &corev1.SecurityContext{
-				RunAsUser:    &runAsUser,
-				RunAsGroup:   &runAsGroup,
-				RunAsNonRoot: &runAsNonRoot,
-			},
 		})
 		s.addVolumeMounts(&initContainers[len(initContainers)-1])
 		s.addResources(&initContainers[len(initContainers)-1], poolResources)
@@ -254,26 +236,12 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 }
 
 func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []corev1.Container) jsonpatch.JsonPatchOperation {
-	var runAsNonRoot bool = false
-	var runAsUser int64 = 0
-	var runAsGroup int64 = 0
-
-	capabilities := corev1.Capabilities{
-		Add: []corev1.Capability{"NET_ADMIN", "NET_RAW", "NET_BIND_SERVICE"},
-	}
-
 	for _, img := range s.config.ContainerImages {
 		containers = append(containers, corev1.Container{
 			Name:            nameOf(img),
 			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}),
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
-			SecurityContext: &corev1.SecurityContext{
-				Capabilities: &capabilities,
-				RunAsUser:    &runAsUser,
-				RunAsGroup:   &runAsGroup,
-				RunAsNonRoot: &runAsNonRoot,
-			},
 		})
 		s.addVolumeMounts(&containers[len(containers)-1])
 		s.addDefaultResourceRequest(&containers[len(containers)-1])
@@ -306,10 +274,6 @@ func (s *admissionWebhookServer) addVolumeMounts(c *corev1.Container) {
 	c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
 		Name:      "spire-agent-socket",
 		MountPath: "/run/spire/sockets",
-		ReadOnly:  true,
-	}, corev1.VolumeMount{
-		Name:      "nsm-socket",
-		MountPath: "/var/lib/networkservicemesh",
 		ReadOnly:  true,
 	}, corev1.VolumeMount{
 		Name:      "nsm-dns-config",
