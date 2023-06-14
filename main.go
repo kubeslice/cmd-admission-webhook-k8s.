@@ -180,7 +180,7 @@ func (s *admissionWebhookServer) createVolumesPatch(p string, volumes []corev1.V
 			Name: "spire-agent-socket",
 			VolumeSource: corev1.VolumeSource{
 				CSI: &corev1.CSIVolumeSource{
-					Driver: "csi.spiffe.io",
+					Driver:   "csi.spiffe.io",
 					ReadOnly: &readOnly,
 				},
 			},
