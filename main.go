@@ -220,17 +220,28 @@ func parseResources(v string, logger *zap.SugaredLogger) map[string]int {
 	return poolResources
 }
 
+func getNodeNameEnvVar() corev1.EnvVar {
+	return corev1.EnvVar{
+		Name: "MY_NODE_NAME",
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: "spec.nodeName",
+			},
+		},
+	}
+}
+
 func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initContainers []corev1.Container) jsonpatch.JsonPatchOperation {
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
-		initContainers = append(initContainers, corev1.Container{
+		initContainers = append([]corev1.Container{{
 			Name:            nameOf(img),
-			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}),
+			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar()),
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
-		})
-		s.addVolumeMounts(&initContainers[len(initContainers)-1])
-		s.addResources(&initContainers[len(initContainers)-1], poolResources)
+		}}, initContainers...)
+		s.addVolumeMounts(&initContainers[0])
+		s.addResources(&initContainers[0], poolResources)
 	}
 	return jsonpatch.NewOperation("add", path.Join(p, "spec", "initContainers"), initContainers)
 }
@@ -239,7 +250,7 @@ func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []
 	for _, img := range s.config.ContainerImages {
 		containers = append(containers, corev1.Container{
 			Name:            nameOf(img),
-			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}),
+			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar()),
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 		})
