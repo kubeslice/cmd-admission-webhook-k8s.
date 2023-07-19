@@ -232,6 +232,9 @@ func getNodeNameEnvVar() corev1.EnvVar {
 }
 
 func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initContainers []corev1.Container) jsonpatch.JsonPatchOperation {
+	var runAsNonRoot bool = false
+	var runAsUser int64 = 0
+	var runAsGroup int64 = 0
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
 		initContainers = append([]corev1.Container{{
@@ -239,6 +242,11 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar()),
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
+			SecurityContext: &corev1.SecurityContext{
+				RunAsUser:    &runAsUser,
+				RunAsGroup:   &runAsGroup,
+				RunAsNonRoot: &runAsNonRoot,
+			},
 		}}, initContainers...)
 		s.addVolumeMounts(&initContainers[0])
 		s.addResources(&initContainers[0], poolResources)
