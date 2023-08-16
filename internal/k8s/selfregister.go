@@ -104,7 +104,15 @@ func (a *AdmissionWebhookRegisterClient) Register(ctx context.Context, c *config
 						},
 					},
 				},
-				SideEffects:             &sideEffects,
+				SideEffects: &sideEffects,
+				NamespaceSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "kubeslice.io/slice",
+							Operator: metav1.LabelSelectorOpExists,
+						},
+					},
+				},
 				AdmissionReviewVersions: []string{"v1"},
 				FailurePolicy:           &policy,
 				ClientConfig: admissionv1.WebhookClientConfig{
