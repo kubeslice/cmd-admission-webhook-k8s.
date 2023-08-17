@@ -139,6 +139,11 @@ func (a *AdmissionWebhookRegisterClient) Register(ctx context.Context, c *config
 								"kubeslice-controller",
 							},
 						},
+						{
+							Key:      "kubeslice.io/inject",
+							Operator: metav1.LabelSelectorOpIn,
+							Values:   []string{"true"},
+						},
 					},
 				},
 				SideEffects:             &sideEffects,
