@@ -235,6 +235,7 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
+	var privileged bool = true
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
 		initContainers = append([]corev1.Container{{
@@ -243,6 +244,7 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			SecurityContext: &corev1.SecurityContext{
+				Privileged:   &privileged,
 				RunAsUser:    &runAsUser,
 				RunAsGroup:   &runAsGroup,
 				RunAsNonRoot: &runAsNonRoot,
@@ -258,6 +260,7 @@ func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
+	var privileged bool = true
 	capabilities := corev1.Capabilities{
 		Add: []corev1.Capability{"NET_BIND_SERVICE"},
 	}
@@ -268,6 +271,7 @@ func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			SecurityContext: &corev1.SecurityContext{
+				Privileged:   &privileged,
 				Capabilities: &capabilities,
 				RunAsUser:    &runAsUser,
 				RunAsGroup:   &runAsGroup,
