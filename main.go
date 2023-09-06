@@ -235,7 +235,8 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
-	var privileged bool
+	var privileged bool = false
+	// in case of openshift cluster PROFILE_OPENSHIFT will be set as true
 	privileged, _ = strconv.ParseBool(os.Getenv("PROFILE_OPENSHIFT"))
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
@@ -261,7 +262,9 @@ func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
-	var privileged bool = true
+	var privileged bool = false
+	// in case of openshift cluster PROFILE_OPENSHIFT will be set as true
+	privileged, _ = strconv.ParseBool(os.Getenv("PROFILE_OPENSHIFT"))
 	capabilities := corev1.Capabilities{
 		Add: []corev1.Capability{"NET_BIND_SERVICE"},
 	}
