@@ -235,7 +235,8 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
-	var privileged bool = true
+	var privileged bool
+	privileged, _ = strconv.ParseBool(os.Getenv("PROFILE_OPENSHIFT"))
 	poolResources := parseResources(v, s.logger)
 	for _, img := range s.config.InitContainerImages {
 		initContainers = append([]corev1.Container{{
