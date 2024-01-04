@@ -371,18 +371,21 @@ func main() {
 		}()
 	}
 
-	var registerClient = k8s.AdmissionWebhookRegisterClient{
-		Logger: logger.Named("admissionWebhookRegisterClient"),
-	}
+	// Deploy mutating webhook manifest
+	if conf.RegisterWebhookClient {
+		var registerClient = k8s.AdmissionWebhookRegisterClient{
+			Logger: logger.Named("admissionWebhookRegisterClient"),
+		}
 
-	err = registerClient.Register(ctx, conf)
-	if err != nil {
-		prod.Fatal(err.Error())
-	}
+		err = registerClient.Register(ctx, conf)
+		if err != nil {
+			prod.Fatal(err.Error())
+		}
 
-	defer func() {
-		_ = registerClient.Unregister(context.Background(), conf)
-	}()
+		defer func() {
+			_ = registerClient.Unregister(context.Background(), conf)
+		}()
+	}
 
 	s := echo.New()
 	s.Use(middleware.Logger())
