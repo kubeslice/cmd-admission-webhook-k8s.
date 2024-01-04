@@ -49,6 +49,7 @@ type Config struct {
 	KeyFilePath           string            `desc:"Path to RSA/Ed25519 related to Config.CertFilePath" split_words:"true"`
 	CABundleFilePath      string            `desc:"Path to cabundle file related to Config.CertFilePath" split_words:"true"`
 	OpenTelemetryEndpoint string            `default:"otel-collector.observability.svc.cluster.local:4317" desc:"OpenTelemetry Collector Endpoint"`
+	RegisterWebhookClient bool              `default:"true" desc:"Determines whether the mutating webhook configuration should be applied programmatically (true) or through YAML deployment (false)" split_words:"true"`
 	envs                  []corev1.EnvVar
 	caBundle              []byte
 	cert                  tls.Certificate
