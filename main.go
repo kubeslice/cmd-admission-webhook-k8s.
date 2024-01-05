@@ -372,7 +372,7 @@ func main() {
 	}
 
 	// Deploy mutating webhook manifest
-	if conf.RegisterWebhookClient {
+	if conf.RegisterWebhookClient == "true" {
 		var registerClient = k8s.AdmissionWebhookRegisterClient{
 			Logger: logger.Named("admissionWebhookRegisterClient"),
 		}
