@@ -47,10 +47,11 @@ type Config struct {
 	Envs                  []string          `desc:"Additional Envs that should be appended for each Config.ContainerImages and Config.InitContainerImages" split_words:"true"`
 	CertFilePath          string            `desc:"Path to certificate" split_words:"true"`
 	KeyFilePath           string            `desc:"Path to RSA/Ed25519 related to Config.CertFilePath" split_words:"true"`
+	CABundle              []byte            `default:"" desc:"Base64-encoded PEM-encoded certificate bundle" split_words:"true"`
 	CABundleFilePath      string            `desc:"Path to cabundle file related to Config.CertFilePath" split_words:"true"`
 	OpenTelemetryEndpoint string            `default:"otel-collector.observability.svc.cluster.local:4317" desc:"OpenTelemetry Collector Endpoint"`
+	RegisterWebhookClient string            `default:"true" desc:"Determines whether the mutating webhook configuration should be applied programmatically (true) or through YAML deployment (false)" split_words:"true"`
 	envs                  []corev1.EnvVar
-	caBundle              []byte
 	cert                  tls.Certificate
 	once                  sync.Once
 }
@@ -70,7 +71,7 @@ func (c *Config) GetOrResolveCertificate() tls.Certificate {
 // GetOrResolveCABundle tries to lookup CA bundle from passed Config.CABundleFilePath or returns ca bundle from self signed in memory certificate.
 func (c *Config) GetOrResolveCABundle() []byte {
 	c.once.Do(c.initialize)
-	return c.caBundle
+	return c.CABundle
 }
 
 func (c *Config) initialize() {
@@ -112,14 +113,14 @@ func (c *Config) initializeEnvs() {
 }
 
 func (c *Config) initializeCABundle() {
-	if len(c.caBundle) != 0 {
+	if len(c.CABundle) != 0 {
 		return
 	}
 	r, err := ioutil.ReadFile(c.CABundleFilePath)
 	if err != nil {
 		panic(err.Error())
 	}
-	c.caBundle = r
+	c.CABundle = r
 }
 
 func (c *Config) initializeCert() {
@@ -129,6 +130,7 @@ func (c *Config) initializeCert() {
 			panic(err.Error())
 		}
 		c.cert = cert
+		return
 	}
 	c.cert = c.selfSignedInMemoryCertificeate()
 }
@@ -182,6 +184,6 @@ func (c *Config) selfSignedInMemoryCertificeate() tls.Certificate {
 		panic(err.Error())
 	}
 
-	c.caBundle = pemCert
+	c.CABundle = pemCert
 	return result
 }
