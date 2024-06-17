@@ -50,6 +50,7 @@ import (
 )
 
 var deserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
+var disableLocalDNSServerAnnotation = "networkservicemesh.io/disable-local-dnsserver"
 
 type admissionWebhookServer struct {
 	config *config.Config
@@ -81,11 +82,17 @@ func (s *admissionWebhookServer) Review(in *admissionv1.AdmissionRequest) *admis
 		return resp
 	}
 	annotation := podMetaPtr.Annotations[s.config.Annotation]
+	disableLocalDNSServer := false
+	if _, ok := podMetaPtr.Annotations[disableLocalDNSServerAnnotation]; ok {
+		if podMetaPtr.Annotations[disableLocalDNSServerAnnotation] == "true" {
+			disableLocalDNSServer = true
+		}
+	}
 
 	if annotation != "" {
 		bytes, err := json.Marshal([]jsonpatch.JsonPatchOperation{
-			s.createInitContainerPatch(p, annotation, spec.InitContainers),
-			s.createContainerPatch(p, annotation, spec.Containers),
+			s.createInitContainerPatch(p, annotation, disableLocalDNSServer, spec.InitContainers),
+			s.createContainerPatch(p, annotation, disableLocalDNSServer, spec.Containers),
 			s.createVolumesPatch(p, spec.Volumes),
 			s.createLabelPatch(p, podMetaPtr.Labels),
 		})
@@ -231,7 +238,7 @@ func getNodeNameEnvVar() corev1.EnvVar {
 	}
 }
 
-func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initContainers []corev1.Container) jsonpatch.JsonPatchOperation {
+func (s *admissionWebhookServer) createInitContainerPatch(p, v string, disableLocalDNSServer bool, initContainers []corev1.Container) jsonpatch.JsonPatchOperation {
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
@@ -239,10 +246,16 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 	// in case of openshift cluster PROFILE_OPENSHIFT will be set as true
 	privileged, _ = strconv.ParseBool(os.Getenv("PROFILE_OPENSHIFT"))
 	poolResources := parseResources(v, s.logger)
+
+	envVar := append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar())
+	if disableLocalDNSServer {
+		envVar = append(envVar, corev1.EnvVar{Name: "NSM_LOCALDNSSERVERENABLED", Value: "false"})
+	}
+
 	for _, img := range s.config.InitContainerImages {
 		initContainers = append([]corev1.Container{{
 			Name:            nameOf(img),
-			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar()),
+			Env:             envVar,
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			SecurityContext: &corev1.SecurityContext{
@@ -258,7 +271,7 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, initConta
 	return jsonpatch.NewOperation("add", path.Join(p, "spec", "initContainers"), initContainers)
 }
 
-func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []corev1.Container) jsonpatch.JsonPatchOperation {
+func (s *admissionWebhookServer) createContainerPatch(p, v string, disableLocalDNSServer bool, containers []corev1.Container) jsonpatch.JsonPatchOperation {
 	var runAsNonRoot bool = false
 	var runAsUser int64 = 0
 	var runAsGroup int64 = 0
@@ -268,10 +281,16 @@ func (s *admissionWebhookServer) createContainerPatch(p, v string, containers []
 	capabilities := corev1.Capabilities{
 		Add: []corev1.Capability{"NET_BIND_SERVICE"},
 	}
+
+	envVar := append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar())
+	if disableLocalDNSServer {
+		envVar = append(envVar, corev1.EnvVar{Name: "NSM_LOCALDNSSERVERENABLED", Value: "false"})
+	}
+
 	for _, img := range s.config.ContainerImages {
 		containers = append(containers, corev1.Container{
 			Name:            nameOf(img),
-			Env:             append(s.config.GetOrResolveEnvs(), corev1.EnvVar{Name: s.config.NSURLEnvName, Value: v}, getNodeNameEnvVar()),
+			Env:             envVar,
 			Image:           img,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			SecurityContext: &corev1.SecurityContext{
