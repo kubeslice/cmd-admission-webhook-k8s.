@@ -8,3 +8,5 @@ dockerImagePipeline(
   ignore_critical: 'false',
   update_trivy: 'false'
 )
+
+
