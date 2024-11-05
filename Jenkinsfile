@@ -6,5 +6,3 @@ dockerImagePipeline(
   buildContext: '.',
   buildArguments: [PLATFORM:"amd64"]
 )
-
-
