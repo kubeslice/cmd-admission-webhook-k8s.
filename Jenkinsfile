@@ -4,9 +4,7 @@ dockerImagePipeline(
   service: 'cmd-admission-webhook-k8s',
   dockerfile: 'Dockerfile',
   buildContext: '.',
-  buildArguments: [PLATFORM:"amd64"],
-  ignore_critical: 'false',
-  update_trivy: 'false'
+  buildArguments: [PLATFORM:"amd64"]
 )
 
 
