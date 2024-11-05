@@ -251,8 +251,19 @@ func (s *admissionWebhookServer) createInitContainerPatch(p, v string, disableLo
 	if disableLocalDNSServer {
 		envVar = append(envVar, corev1.EnvVar{Name: "NSM_LOCALDNSSERVERENABLED", Value: "false"})
 	}
+	// build map of initContainers in pod to lookup while injecting our initContainers
+	uniqueInitContainers := make(map[string]struct{})
+	for _, image := range initContainers {
+		if _, exists := uniqueInitContainers[image.Name]; exists {
+			continue // Skip duplicate init container
+		}
+		uniqueInitContainers[image.Name] = struct{}{} // mark as seen
+	}
 
 	for _, img := range s.config.InitContainerImages {
+		if _, exists := uniqueInitContainers[img]; exists {
+			continue // Skip duplicate init container
+		}
 		initContainers = append([]corev1.Container{{
 			Name:            nameOf(img),
 			Env:             envVar,
